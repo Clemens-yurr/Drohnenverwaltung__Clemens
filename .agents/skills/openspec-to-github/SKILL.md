@@ -1,12 +1,12 @@
 ---
-name: openspec-apply-with-github
+name: openspec-to-github
 description: Updates the Github Issue and execute opsx:apply
 ---
 
 # OpenSpec Apply with GitHub
 
 Use this skill to apply the current OpenSpec change to the local repository and synchronize with GitHub Issues and the configured GitHub Project.
-Always use this Github project: `OpenSpec Student Website Project`
+Always use this Github project: `Drohnenverwaltung_Deuti_SYP`
 
 ## Workflow
 
