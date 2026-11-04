@@ -9,7 +9,7 @@ Domain rules:
 - Only available drones can be loaned.
 - Returning a loan makes the drone available again.
 - Accessory quantities must not be negative.
-rules:
+rules: {}
 specs:
 - Use Given/When/Then scenarios for acceptance criteria.
 - Describe behavior, not implementation details.
