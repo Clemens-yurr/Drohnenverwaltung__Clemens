@@ -29,7 +29,7 @@ public class DroneInventoryDbContext(DbContextOptions<DroneInventoryDbContext> o
         modelBuilder.Entity<Loan>(entity =>
         {
             entity.HasOne(loan => loan.Drone)
-                .WithMany(drone => drone.Loans)
+                .WithMany()
                 .HasForeignKey(loan => loan.DroneId);
 
             entity.HasOne(loan => loan.StudentGroup)
