@@ -30,6 +30,13 @@ public static class DroneEndpoints
 
         drones.MapPost("", async (CreateDroneRequest request, DroneInventoryDbContext dbContext) =>
         {
+            var errors = Validate(request);
+
+            if (errors.Count > 0)
+            {
+                return Results.ValidationProblem(errors);
+            }
+
             var drone = new Drone
             {
                 Name = request.Name,
@@ -46,5 +53,25 @@ public static class DroneEndpoints
         .WithName("CreateDrone");
 
         return endpoints;
+    }
+
+    /// <summary>
+    /// A drone needs a name and a description. Invalid input is reported as problem details.
+    /// </summary>
+    private static Dictionary<string, string[]> Validate(CreateDroneRequest request)
+    {
+        var errors = new Dictionary<string, string[]>();
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            errors[nameof(CreateDroneRequest.Name)] = ["A drone name is required."];
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Description))
+        {
+            errors[nameof(CreateDroneRequest.Description)] = ["A drone description is required."];
+        }
+
+        return errors;
     }
 }

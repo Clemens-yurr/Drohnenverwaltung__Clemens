@@ -39,6 +39,46 @@ public sealed class DroneEndpointsTests : IClassFixture<DroneInventoryApiFactory
     }
 
     [Fact]
+    public async Task CreateDrone_WithoutNameAndDescription_ReturnsValidationProblem()
+    {
+        var response = await _client.PostAsJsonAsync("/api/drones", new { });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var problem = json.RootElement;
+
+        Assert.Equal(400, problem.GetProperty("status").GetInt32());
+
+        var errors = problem.GetProperty("errors");
+        Assert.True(errors.TryGetProperty("Name", out _));
+        Assert.True(errors.TryGetProperty("Description", out _));
+    }
+
+    [Fact]
+    public async Task CreateDrone_WithBlankDescription_ReturnsValidationProblemAndStoresNothing()
+    {
+        var before = (await GetDronesAsync()).Count;
+
+        var response = await _client.PostAsJsonAsync("/api/drones", new
+        {
+            name = "Copter Without Description",
+            description = "   "
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(json.RootElement.GetProperty("errors").TryGetProperty("Description", out _));
+
+        var drones = await GetDronesAsync();
+        Assert.Equal(before, drones.Count);
+        Assert.DoesNotContain(drones, listed =>
+            listed.GetProperty("name").GetString() == "Copter Without Description");
+    }
+
+    [Fact]
     public async Task GetDrones_ReturnsNameDescriptionAndAvailableStatus()
     {
         await CreateDroneAsync("Copter Two", "Second training drone");
