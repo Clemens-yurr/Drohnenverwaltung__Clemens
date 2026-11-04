@@ -49,7 +49,7 @@ no relational integrity for loans).
 
 ### Availability and loan state are derived, not stored
 
-A loan is active when `ReturnedOn IS NULL`; a drone is `OnLoan` when any active loan references it,
+A loan is active when `ReturnedOn IS NULL`; a drone is `Loaned` when any active loan references it,
 otherwise `Available`. The API projects `status`/`state` in queries, so no stored flag can drift out
 of sync with the loan rows. `status` is never accepted as input.
 
@@ -59,11 +59,11 @@ truth and an easy way to end up with a loaned drone marked available); store `Lo
 
 ### Domain rules enforced in the database and in a loan service, not only in the endpoints
 
-- Unique indexes on `Drone.InventoryNumber` and `StudentGroup.Name`.
+- Required names, drone descriptions and nonnegative accessory quantities are validated by the API.
 - A partial unique index on `Loan.DroneId` filtered to `"ReturnedOn" IS NULL`, so "at most one
   active loan per drone" holds even if two requests race.
 - `LoanService` performs the readable checks (drone exists and is available, group exists, quantities
-  `>= 0`, not already returned, no loan history before delete) inside a transaction and returns a
+  `>= 0`, not already returned) inside a transaction and returns a
   result object with a domain error code; endpoints translate codes to HTTP responses.
 
 Alternatives: endpoint-level checks only (duplicates and double loans become possible under
@@ -71,10 +71,8 @@ concurrency); EF interceptors/domain events (more machinery than a single-user t
 
 ### Status codes and error shape
 
-`404` for unknown ids, `400` (ValidationProblemDetails) for malformed or negative input, `409` for
-rule conflicts (inventory number or group name already used, drone not available, loan already
-returned, delete blocked by loan history). A unique-index violation that slips past the service check
-is caught as `DbUpdateException` and mapped to the same `409` shape.
+`404` for unknown ids, `400` (ValidationProblemDetails) for malformed or negative input, and `409`
+for domain conflicts (drone not available, loan already returned, or a second active loan).
 
 ### Dates: server-set `DateOnly`, injectable clock
 
@@ -94,24 +92,24 @@ schema per accessory type and no natural place for the `Quantity >= 0` check pat
 
 ### API surface (minimal APIs, versionless `/api`)
 
-- `GET/POST /api/drones` (with `?status=available|onloan` for the loan-form picker), `GET/PUT/DELETE /api/drones/{id}`
-- `GET/POST /api/student-groups`, `PUT/DELETE /api/student-groups/{id}`
-- `GET /api/loans?state=active|returned&droneId=&studentGroupId=` - also serves as loan history
+- `GET/POST /api/drones` (with `?status=available|loaned` for active loan selection)
+- `GET/POST /api/student-groups` for registration and loan selection
+- `GET /api/loans?state=active|returned` for active loans and complete loan history
 - `GET /api/loans/{id}`
 - `POST /api/loans` with `{ droneId, studentGroupId, items: [{ type, quantity }] }`
 - `POST /api/loans/{id}/return`
 
 DTOs are separate records from entities so navigation properties and ids never leak or become
 bindable by accident. JSON uses the default camelCase contract; enum values are sent as strings
-(`"Battery"`, `"OnLoan"`). The weather-forecast sample is deleted.
+(`"Battery"`, `"Loaned"`). The weather-forecast sample is deleted.
 
 ### Frontend: standalone components with signals and per-feature folders
 
 - `src/app/core/` - hand-written API models plus `DroneApiService`, `StudentGroupApiService`,
   `LoanApiService` wrapping `HttpClient`.
-- `src/app/features/drones/`, `.../student-groups/`, `.../loans/` - list/editor components for each
-  area; one page for creating a loan (drone + group pickers, accessory quantities) and one for
-  history with state/drone/group filters.
+- `src/app/features/drones/`, `.../student-groups/`, `.../loans/` - registration and list components;
+  one page for creating a loan (drone + group pickers, accessory quantities), one for active loans
+  and one for loan history.
 - Routes are lazy-loaded via `loadComponent`; `provideHttpClient()` is added to `app.config.ts`;
   `app.html` becomes a shell with navigation and `<router-outlet />`, replacing the placeholder.
 - The dev server proxies `/api` to `http://localhost:5214` through `proxy.conf.json` referenced in
@@ -124,7 +122,7 @@ OpenAPI (nice, but overkill for five resources and would add a build step).
 
 - A new `backend/DroneInventory.Api.Tests` xUnit project using `Microsoft.AspNetCore.Mvc.Testing`
   with a temp-file SQLite database per test class, covering every scenario in the three specs,
-  including negative quantities, double loan, double return and blocked deletes. `public partial
+  including negative quantities, double loan and double return. `public partial
   class Program` is added so `WebApplicationFactory<Program>` can host the app.
 - Frontend: Angular's Vitest setup (`ng test`) for the API services with
   `provideHttpClientTesting` and for the accessory-quantity form validation; `ng build` for
@@ -140,8 +138,6 @@ OpenAPI (nice, but overkill for five resources and would add a build step).
   if restore is unavailable, fall back to `EnsureCreated()` for the first run and note it.
 - **`DateOnly` + SQLite + EF Core provider quirks** → covered by the integration tests that assert
   loan/return dates, and kept to two columns.
-- **Delete blocked by history** means a mistyped drone or group cannot be removed once used → state
-  this in the UI error message; a soft-delete flag can be added later without changing the specs.
 - **No auth means anyone reaching the API can lend or return** → accepted for this initial,
   explicitly single-user scope; the API stays unauthenticated behind the dev proxy.
 - **Client-side duplication of enum strings** → kept small and centralised in one models file; the

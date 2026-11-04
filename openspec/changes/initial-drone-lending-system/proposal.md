@@ -10,10 +10,9 @@ history.
 
 ## What Changes
 
-- Introduce a drone registry: create, read, update and delete drones identified by a unique
-  inventory/inventory number and model, with a status of `Available` or `OnLoan`.
-- Introduce a student group registry: create, read, update and delete student groups that act as
-  the borrower of a loan.
+- Introduce drone registration and listing with a name, description and a derived status of
+  `Available` or `Loaned`.
+- Introduce student group creation so groups can be selected as borrowers.
 - Introduce drone loans: a loan references exactly one available drone and one student group, and
   records battery and propeller quantities as integer loan items (`Battery` / `Propeller`), each
   `>= 0`. Accessories are quantities only - no stock ledger, no individual battery or propeller
@@ -23,8 +22,7 @@ history.
   quantities can never be negative.
 - Add a return operation that closes a loan, stamps the return date and preserves the loan as
   history. Closed loans are never deleted or overwritten.
-- Add loan history: all loans (active and returned) are queryable, filterable by drone, student
-  group and state.
+- Show active loans and preserve returned loans in the loan history.
 - Deliver an Angular UI covering drones, student groups, creating a loan, returning a loan and
   browsing loan history, backed by the ASP.NET Core API with EF Core and SQLite persistence.
 - Remove the template weather-forecast endpoint and the default Angular placeholder page, which
@@ -48,13 +46,13 @@ None. No specs exist in the project yet.
 
 ## Impact
 
-- Backend `backend/DroneInventory.Api`: new EF Core `DbContext` with SQLite, domain entities
-  (`Drone`, `StudentGroup`, `Loan`, `LoanItem`), minimal API endpoints for drones, student groups,
-  loans, returns and history, domain rule enforcement, and the removal of the weather-forecast
-  sample.
-- Frontend `frontend/drone-inventory-ui`: new routes, feature components and an HTTP service layer
-  for drones, student groups, loans and history; the placeholder welcome page is replaced by the
-  application shell/navigation.
+- Backend `backend/DroneInventory.Api`: EF Core `DbContext` with SQLite, domain entities
+  (`Drone`, `StudentGroup`, `Loan`, `LoanItem`), minimal API endpoints for drone registration and
+  listing, student group selection, loans, returns, active loans and history, and removal of the
+  weather-forecast sample.
+- Frontend `frontend/drone-inventory-ui`: routes, feature components and an HTTP service layer for
+  drone and student group creation, loans, returns and history; the placeholder page is replaced
+  by application navigation.
 - Dependencies: EF Core SQLite provider added to the API project. No new frontend runtime
   dependencies; Angular's built-in `HttpClient` is used.
 - Developer experience: SQLite database file created locally plus EF Core migrations, or
