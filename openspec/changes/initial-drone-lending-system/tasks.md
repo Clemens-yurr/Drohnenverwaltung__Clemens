@@ -2,7 +2,7 @@
 
 ## 1. Backend foundation and persistence
 
-- [ ] 1.1 Add `Microsoft.EntityFrameworkCore.Sqlite` and `Microsoft.EntityFrameworkCore.Design` to `DroneInventory.Api.csproj`; verify `dotnet restore` and `dotnet build backend/DroneInventory.Api` succeed — [#2](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/2)
+- [x] 1.1 Add `Microsoft.EntityFrameworkCore.Sqlite` and `Microsoft.EntityFrameworkCore.Design` to `DroneInventory.Api.csproj`; verify `dotnet restore` and `dotnet build backend/DroneInventory.Api` succeed — [#2](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/2)
 - [ ] 1.2 Add a local tool manifest and install `dotnet-ef`; verify the 10.x tool version and `dotnet tool restore` — [#3](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/3)
 - [ ] 1.3 Implement `Drone`, `StudentGroup`, `Loan` and `LoanItem` entities plus `DroneInventoryDbContext`; enforce one active loan per drone and at most one accessory entry per type per loan — [#4](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/4)
 - [ ] 1.4 Configure SQLite, generate and apply the initial migration at startup; verify the database contains Drones, StudentGroups, Loans and LoanItems — [#5](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/5)
