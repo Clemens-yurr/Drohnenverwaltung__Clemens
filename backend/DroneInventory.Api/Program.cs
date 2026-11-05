@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using DroneInventory.Api.Data;
+using DroneInventory.Api.Endpoints;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +11,10 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<DroneInventoryDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DroneLending")));
+
+// Enums such as the drone status are sent as their names instead of numbers.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 var app = builder.Build();
 
@@ -27,8 +33,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGet("/api/drones", () => Results.Ok(Array.Empty<object>()))
-    .WithName("GetDrones");
+app.MapDroneEndpoints();
 
 app.Run();
 
