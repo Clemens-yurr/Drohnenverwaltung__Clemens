@@ -37,6 +37,8 @@ app.MapDroneEndpoints();
 
 app.MapStudentGroupEndpoints();
 
+app.MapLoanEndpoints();
+
 app.Run();
 
 // Exposed so integration tests can host the API with WebApplicationFactory<Program>.
