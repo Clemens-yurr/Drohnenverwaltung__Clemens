@@ -12,6 +12,51 @@ public static class LoanEndpoints
     {
         var loans = endpoints.MapGroup("/api/loans");
 
+        loans.MapGet("", async (string? state, DroneInventoryDbContext dbContext) =>
+        {
+            var filter = state?.Trim().ToLowerInvariant();
+
+            if (filter is not null and not ("" or "active" or "returned"))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["state"] = ["The loan state must be 'active' or 'returned'."]
+                });
+            }
+
+            var query = dbContext.Loans.AsNoTracking();
+
+            query = filter switch
+            {
+                "active" => query.Where(loan => loan.ReturnedOn == null),
+                "returned" => query.Where(loan => loan.ReturnedOn != null),
+                _ => query
+            };
+
+            // Accessory quantities are read from the loan item rows; a missing type counts as zero.
+            var response = await query
+                .OrderBy(loan => loan.Id)
+                .Select(loan => new LoanListItemDto(
+                    loan.Id,
+                    loan.DroneId,
+                    loan.Drone.Name,
+                    loan.StudentGroupId,
+                    loan.StudentGroup.Name,
+                    loan.Items
+                        .Where(item => item.Type == LoanItemType.Battery)
+                        .Sum(item => (int?)item.Quantity) ?? 0,
+                    loan.Items
+                        .Where(item => item.Type == LoanItemType.Propeller)
+                        .Sum(item => (int?)item.Quantity) ?? 0,
+                    loan.LoanedOn,
+                    loan.ReturnedOn == null ? LoanState.Active : LoanState.Returned,
+                    loan.ReturnedOn))
+                .ToListAsync();
+
+            return Results.Ok(response);
+        })
+        .WithName("GetLoans");
+
         loans.MapPost("", async (CreateLoanRequest request, DroneInventoryDbContext dbContext) =>
         {
             var errors = Validate(request);

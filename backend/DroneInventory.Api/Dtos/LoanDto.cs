@@ -15,6 +15,22 @@ public sealed record LoanDto(
     DateOnly? ReturnedOn);
 
 /// <summary>
+/// A loan in the active list or the loan history, with the recorded accessory quantities and the
+/// state derived from the return date.
+/// </summary>
+public sealed record LoanListItemDto(
+    int Id,
+    int DroneId,
+    string DroneName,
+    int StudentGroupId,
+    string StudentGroupName,
+    int BatteryQuantity,
+    int PropellerQuantity,
+    DateOnly LoanedOn,
+    LoanState State,
+    DateOnly? ReturnedOn);
+
+/// <summary>
 /// The payload for creating a loan. The loan date is set by the server, so it is not part of it.
 /// Accessories are optional and are tracked only as quantities per type.
 /// </summary>
