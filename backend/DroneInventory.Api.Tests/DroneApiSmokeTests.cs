@@ -1,14 +1,13 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace DroneInventory.Api.Tests;
 
-public sealed class DroneApiSmokeTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class DroneApiSmokeTests : IClassFixture<DroneInventoryApiFactory>
 {
     private readonly HttpClient _client;
 
-    public DroneApiSmokeTests(WebApplicationFactory<Program> factory)
+    public DroneApiSmokeTests(DroneInventoryApiFactory factory)
     {
         _client = factory.CreateClient();
     }
