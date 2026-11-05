@@ -76,6 +76,122 @@ public sealed class LoanEndpointsTests : IClassFixture<DroneInventoryApiFactory>
         Assert.Equal(before, CountLoans());
     }
 
+    [Fact]
+    public async Task CreateLoan_WithoutAccessories_CreatesLoanWithoutItems()
+    {
+        var droneId = await CreateDroneAsync("TELLO-09", "Drone without accessories");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+
+        var response = await _client.PostAsJsonAsync("/api/loans", new { droneId, studentGroupId = groupId });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var loanId = json.RootElement.GetProperty("id").GetInt32();
+
+        Assert.Empty(GetLoanItems(loanId));
+    }
+
+    [Fact]
+    public async Task CreateLoan_WithBatteryAndPropellerQuantities_RecordsItems()
+    {
+        var droneId = await CreateDroneAsync("TELLO-10", "Drone with accessories");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+
+        var response = await _client.PostAsJsonAsync("/api/loans", new
+        {
+            droneId,
+            studentGroupId = groupId,
+            items = new[]
+            {
+                new { type = "Battery", quantity = 2 },
+                new { type = "Propeller", quantity = 4 }
+            }
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var loanId = json.RootElement.GetProperty("id").GetInt32();
+
+        var items = GetLoanItems(loanId);
+
+        Assert.Equal(2, items.Count);
+        Assert.Contains(items, item => item.Type == LoanItemType.Battery && item.Quantity == 2);
+        Assert.Contains(items, item => item.Type == LoanItemType.Propeller && item.Quantity == 4);
+    }
+
+    [Fact]
+    public async Task CreateLoan_WithZeroAccessoryQuantity_RecordsItem()
+    {
+        var droneId = await CreateDroneAsync("TELLO-11", "Drone without spare batteries");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+
+        var response = await _client.PostAsJsonAsync("/api/loans", new
+        {
+            droneId,
+            studentGroupId = groupId,
+            items = new[] { new { type = "Battery", quantity = 0 } }
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var loanId = json.RootElement.GetProperty("id").GetInt32();
+
+        var item = Assert.Single(GetLoanItems(loanId));
+        Assert.Equal(LoanItemType.Battery, item.Type);
+        Assert.Equal(0, item.Quantity);
+    }
+
+    [Fact]
+    public async Task CreateLoan_WithNegativeQuantity_ReturnsValidationProblemAndCreatesNoLoan()
+    {
+        var droneId = await CreateDroneAsync("TELLO-12", "Drone with a negative quantity");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+        var before = CountLoans();
+
+        var response = await _client.PostAsJsonAsync("/api/loans", new
+        {
+            droneId,
+            studentGroupId = groupId,
+            items = new[] { new { type = "Propeller", quantity = -1 } }
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(400, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Equal(before, CountLoans());
+    }
+
+    [Fact]
+    public async Task CreateLoan_WithDuplicateAccessoryType_ReturnsValidationProblemAndCreatesNoLoan()
+    {
+        var droneId = await CreateDroneAsync("TELLO-13", "Drone with duplicate accessory types");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+        var before = CountLoans();
+
+        var response = await _client.PostAsJsonAsync("/api/loans", new
+        {
+            droneId,
+            studentGroupId = groupId,
+            items = new[]
+            {
+                new { type = "Battery", quantity = 1 },
+                new { type = "Battery", quantity = 2 }
+            }
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(400, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Equal(before, CountLoans());
+    }
+
     private async Task<int> CreateDroneAsync(string name, string description)
     {
         var response = await _client.PostAsJsonAsync("/api/drones", new { name, description });
@@ -99,6 +215,17 @@ public sealed class LoanEndpointsTests : IClassFixture<DroneInventoryApiFactory>
         dbContext.SaveChanges();
 
         return group.Id;
+    }
+
+    private List<LoanItem> GetLoanItems(int loanId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DroneInventoryDbContext>();
+
+        return dbContext.LoanItems
+            .Where(item => item.LoanId == loanId)
+            .OrderBy(item => item.Id)
+            .ToList();
     }
 
     private int CountLoans()
