@@ -89,6 +89,46 @@ public static class LoanEndpoints
         })
         .WithName("CreateLoan");
 
+        loans.MapPost("/{id:int}/return", async (int id, DroneInventoryDbContext dbContext) =>
+        {
+            var loan = await dbContext.Loans
+                .Include(existing => existing.Drone)
+                .Include(existing => existing.StudentGroup)
+                .SingleOrDefaultAsync(existing => existing.Id == id);
+
+            if (loan is null)
+            {
+                return Results.Problem(
+                    title: "Loan not found",
+                    detail: $"No loan with id {id} exists.",
+                    statusCode: StatusCodes.Status404NotFound);
+            }
+
+            if (!loan.IsActive)
+            {
+                return Results.Problem(
+                    title: "Loan already returned",
+                    detail: $"Loan {loan.Id} was already returned on {loan.ReturnedOn:yyyy-MM-dd}.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            // The return date is set by the server; clients cannot backdate it.
+            loan.ReturnedOn = DateOnly.FromDateTime(DateTime.UtcNow);
+            await dbContext.SaveChangesAsync();
+
+            var response = new LoanDto(
+                loan.Id,
+                loan.DroneId,
+                loan.Drone.Name,
+                loan.StudentGroupId,
+                loan.StudentGroup.Name,
+                loan.LoanedOn,
+                loan.ReturnedOn);
+
+            return Results.Ok(response);
+        })
+        .WithName("ReturnLoan");
+
         return endpoints;
     }
 
