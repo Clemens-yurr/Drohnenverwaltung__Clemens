@@ -35,6 +35,8 @@ app.UseHttpsRedirection();
 
 app.MapDroneEndpoints();
 
+app.MapLoanEndpoints();
+
 app.Run();
 
 // Exposed so integration tests can host the API with WebApplicationFactory<Program>.
