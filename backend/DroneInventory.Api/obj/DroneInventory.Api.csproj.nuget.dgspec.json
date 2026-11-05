@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\deuti\\Desktop\\workspace\\openSpec\\Drohnenverwaltung__Clemens\\backend\\DroneInventory.Api\\DroneInventory.Api.csproj": {}
+    "C:\\Users\\HP\\Desktop\\Drohnenverwaltung\\Drohnenverwaltung-issue14\\backend\\DroneInventory.Api\\DroneInventory.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\deuti\\Desktop\\workspace\\openSpec\\Drohnenverwaltung__Clemens\\backend\\DroneInventory.Api\\DroneInventory.Api.csproj": {
+    "C:\\Users\\HP\\Desktop\\Drohnenverwaltung\\Drohnenverwaltung-issue14\\backend\\DroneInventory.Api\\DroneInventory.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\deuti\\Desktop\\workspace\\openSpec\\Drohnenverwaltung__Clemens\\backend\\DroneInventory.Api\\DroneInventory.Api.csproj",
+        "projectUniqueName": "C:\\Users\\HP\\Desktop\\Drohnenverwaltung\\Drohnenverwaltung-issue14\\backend\\DroneInventory.Api\\DroneInventory.Api.csproj",
         "projectName": "DroneInventory.Api",
-        "projectPath": "C:\\Users\\deuti\\Desktop\\workspace\\openSpec\\Drohnenverwaltung__Clemens\\backend\\DroneInventory.Api\\DroneInventory.Api.csproj",
-        "packagesPath": "C:\\Users\\deuti\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\deuti\\Desktop\\workspace\\openSpec\\Drohnenverwaltung__Clemens\\backend\\DroneInventory.Api\\obj\\",
+        "projectPath": "C:\\Users\\HP\\Desktop\\Drohnenverwaltung\\Drohnenverwaltung-issue14\\backend\\DroneInventory.Api\\DroneInventory.Api.csproj",
+        "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\HP\\Desktop\\Drohnenverwaltung\\Drohnenverwaltung-issue14\\backend\\DroneInventory.Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\deuti\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\HP\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -86,7 +86,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.402/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Users\\HP\\AppData\\Local\\Temp\\dotnet10\\sdk\\10.0.403/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.AspNetCore": "(,10.0.32767]",
             "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
