@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using DroneInventory.Api.Data;
 using DroneInventory.Api.Domain;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DroneInventory.Api.Tests;
@@ -192,6 +193,73 @@ public sealed class LoanEndpointsTests : IClassFixture<DroneInventoryApiFactory>
         Assert.Equal(before, CountLoans());
     }
 
+    [Fact]
+    public async Task CreateLoan_ForDroneWithActiveLoan_ReturnsConflictAndKeepsSingleActiveLoan()
+    {
+        var droneId = await CreateDroneAsync("TELLO-20", "Drone with an active loan");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+
+        var first = await _client.PostAsJsonAsync("/api/loans", new { droneId, studentGroupId = groupId });
+
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+
+        var second = await _client.PostAsJsonAsync("/api/loans", new { droneId, studentGroupId = groupId });
+
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+        Assert.Equal("application/problem+json", second.Content.Headers.ContentType?.MediaType);
+
+        using var json = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
+        Assert.Equal(409, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Equal("Drone not available", json.RootElement.GetProperty("title").GetString());
+
+        var stored = Assert.Single(GetLoans(droneId));
+        Assert.True(stored.IsActive);
+    }
+
+    [Fact]
+    public async Task CreateLoan_FromConcurrentRequests_CreatesExactlyOneActiveLoan()
+    {
+        var droneId = await CreateDroneAsync("TELLO-21", "Drone for concurrent loan requests");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+
+        var responses = await Task.WhenAll(
+            _client.PostAsJsonAsync("/api/loans", new { droneId, studentGroupId = groupId }),
+            _client.PostAsJsonAsync("/api/loans", new { droneId, studentGroupId = groupId }));
+
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Created));
+        Assert.Equal(1, responses.Count(response => response.StatusCode == HttpStatusCode.Conflict));
+
+        var stored = Assert.Single(GetLoans(droneId));
+        Assert.True(stored.IsActive);
+    }
+
+    [Fact]
+    public async Task Database_RejectsSecondActiveLoanForSameDrone()
+    {
+        var droneId = await CreateDroneAsync("TELLO-22", "Drone with a database constraint");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DroneInventoryDbContext>();
+
+        dbContext.Loans.Add(new Loan
+        {
+            DroneId = droneId,
+            StudentGroupId = groupId,
+            LoanedOn = DateOnly.FromDateTime(DateTime.UtcNow)
+        });
+        await dbContext.SaveChangesAsync();
+
+        dbContext.Loans.Add(new Loan
+        {
+            DroneId = droneId,
+            StudentGroupId = groupId,
+            LoanedOn = DateOnly.FromDateTime(DateTime.UtcNow)
+        });
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => dbContext.SaveChangesAsync());
+    }
+
     private async Task<int> CreateDroneAsync(string name, string description)
     {
         var response = await _client.PostAsJsonAsync("/api/drones", new { name, description });
@@ -225,6 +293,17 @@ public sealed class LoanEndpointsTests : IClassFixture<DroneInventoryApiFactory>
         return dbContext.LoanItems
             .Where(item => item.LoanId == loanId)
             .OrderBy(item => item.Id)
+            .ToList();
+    }
+
+    private List<Loan> GetLoans(int droneId)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DroneInventoryDbContext>();
+
+        return dbContext.Loans
+            .Where(loan => loan.DroneId == droneId)
+            .OrderBy(loan => loan.Id)
             .ToList();
     }
 
