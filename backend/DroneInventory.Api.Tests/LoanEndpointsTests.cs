@@ -260,6 +260,74 @@ public sealed class LoanEndpointsTests : IClassFixture<DroneInventoryApiFactory>
         await Assert.ThrowsAsync<DbUpdateException>(() => dbContext.SaveChangesAsync());
     }
 
+    [Fact]
+    public async Task ReturnLoan_ForActiveLoan_RecordsTodaysDateAndFreesDrone()
+    {
+        var droneId = await CreateDroneAsync("TELLO-30", "Drone to be returned");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+        var loanId = await CreateLoanAsync(droneId, groupId);
+
+        var response = await _client.PostAsync($"/api/loans/{loanId}/return", null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var returned = json.RootElement;
+
+        Assert.Equal(loanId, returned.GetProperty("id").GetInt32());
+        Assert.Equal(
+            DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd"),
+            returned.GetProperty("returnedOn").GetString());
+
+        var stored = Assert.Single(GetLoans(droneId));
+        Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow), stored.ReturnedOn);
+        Assert.False(stored.IsActive);
+
+        Assert.Equal("Available", await GetDroneStatusAsync(droneId));
+    }
+
+    [Fact]
+    public async Task ReturnLoan_ForReturnedLoan_ReturnsConflictAndKeepsReturnDate()
+    {
+        var droneId = await CreateDroneAsync("TELLO-31", "Drone returned twice");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+        var loanId = await CreateLoanAsync(droneId, groupId);
+
+        var first = await _client.PostAsync($"/api/loans/{loanId}/return", null);
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        var recordedReturnDate = Assert.Single(GetLoans(droneId)).ReturnedOn;
+
+        var second = await _client.PostAsync($"/api/loans/{loanId}/return", null);
+
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+        Assert.Equal("application/problem+json", second.Content.Headers.ContentType?.MediaType);
+
+        using var json = JsonDocument.Parse(await second.Content.ReadAsStringAsync());
+        Assert.Equal(409, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Equal("Loan already returned", json.RootElement.GetProperty("title").GetString());
+
+        Assert.Equal(recordedReturnDate, Assert.Single(GetLoans(droneId)).ReturnedOn);
+    }
+
+    [Fact]
+    public async Task ReturnLoan_DoesNotOverwriteOriginalReturnDate()
+    {
+        var droneId = await CreateDroneAsync("TELLO-32", "Drone with an earlier return date");
+        var groupId = SeedStudentGroup($"Group {Guid.NewGuid():N}");
+        var loanId = await CreateLoanAsync(droneId, groupId);
+        var originalReturnDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-3);
+        SetReturnDate(loanId, originalReturnDate);
+
+        var response = await _client.PostAsync($"/api/loans/{loanId}/return", null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+
+        var stored = Assert.Single(GetLoans(droneId));
+        Assert.Equal(originalReturnDate, stored.ReturnedOn);
+        Assert.False(stored.IsActive);
+    }
+
     private async Task<int> CreateDroneAsync(string name, string description)
     {
         var response = await _client.PostAsJsonAsync("/api/drones", new { name, description });
@@ -294,6 +362,38 @@ public sealed class LoanEndpointsTests : IClassFixture<DroneInventoryApiFactory>
             .Where(item => item.LoanId == loanId)
             .OrderBy(item => item.Id)
             .ToList();
+    }
+
+    private async Task<int> CreateLoanAsync(int droneId, int groupId)
+    {
+        var response = await _client.PostAsJsonAsync("/api/loans", new { droneId, studentGroupId = groupId });
+        response.EnsureSuccessStatusCode();
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return json.RootElement.GetProperty("id").GetInt32();
+    }
+
+    private async Task<string?> GetDroneStatusAsync(int droneId)
+    {
+        var response = await _client.GetAsync("/api/drones");
+        response.EnsureSuccessStatusCode();
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        return json.RootElement.EnumerateArray()
+            .Single(drone => drone.GetProperty("id").GetInt32() == droneId)
+            .GetProperty("status")
+            .GetString();
+    }
+
+    private void SetReturnDate(int loanId, DateOnly returnedOn)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<DroneInventoryDbContext>();
+
+        var loan = dbContext.Loans.Single(existing => existing.Id == loanId);
+        loan.ReturnedOn = returnedOn;
+        dbContext.SaveChanges();
     }
 
     private List<Loan> GetLoans(int droneId)
