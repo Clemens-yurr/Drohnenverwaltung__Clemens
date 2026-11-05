@@ -1,4 +1,5 @@
 using DroneInventory.Api.Data;
+using DroneInventory.Api.Endpoints;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,8 @@ app.UseHttpsRedirection();
 
 app.MapGet("/api/drones", () => Results.Ok(Array.Empty<object>()))
     .WithName("GetDrones");
+
+app.MapStudentGroupEndpoints();
 
 app.Run();
 
