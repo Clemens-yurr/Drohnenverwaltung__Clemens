@@ -7,7 +7,7 @@
 - [ ] 1.3 Implement `Drone`, `StudentGroup`, `Loan` and `LoanItem` entities plus `DroneInventoryDbContext`; enforce one active loan per drone and at most one accessory entry per type per loan — [#4](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/4)
 - [ ] 1.4 Configure SQLite, generate and apply the initial migration at startup; verify the database contains Drones, StudentGroups, Loans and LoanItems — [#5](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/5)
 - [x] 1.5 Remove the weather forecast sample, expose `Program` for testing, and create a test project with a smoke test for an empty `GET /api/drones` — [#6](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/6)
-- [ ] 1.6 Document backend prerequisites, tool restore, migration and run commands in `README.md` — [#7](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/7)
+- [x] 1.6 Document backend prerequisites, tool restore, migration and run commands in `README.md` — [#7](https://github.com/Clemens-yurr/Drohnenverwaltung__Clemens/issues/7)
 
 ## 2. Drone API
 
