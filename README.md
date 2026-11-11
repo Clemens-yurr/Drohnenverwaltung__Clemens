@@ -64,3 +64,40 @@ The `http` launch profile serves the API on <http://localhost:5214>:
 Use `dotnet run --launch-profile https` for the HTTPS profile on <https://localhost:7265>.
 `DroneInventory.Api.http` contains ready-to-send requests for an HTTP client such as
 Visual Studio Code's REST Client or JetBrains HTTP Client.
+
+## Frontend (drone-inventory-ui)
+
+Angular 22 standalone application for drones, student groups and loans. It lives in
+`frontend/drone-inventory-ui` and calls the API through relative `/api` URLs.
+
+### Prerequisites
+
+- **Node.js** `^22.22.3`, `^24.15.0` or `>=26.0.0` (Angular 22 CLI requirement) and npm -
+  `node --version`
+- The API running on <http://localhost:5214>; the development server proxies `/api` there.
+
+### Install and run
+
+```bash
+cd frontend/drone-inventory-ui
+npm install
+npm start
+```
+
+`npm start` serves the app on <http://localhost:4200>. `proxy.conf.json` forwards `/api` to the
+backend, so no CORS configuration is needed. Without a running API the lists stay empty and the
+pages show an error message.
+
+Screens: `/drones`, `/student-groups`, `/loans` (active loans), `/loans/new` (create a loan) and
+`/loans/history`.
+
+### Build and test
+
+```bash
+cd frontend/drone-inventory-ui
+npm run build
+npm test
+```
+
+`npm run build` type-checks the templates and writes `dist/`. `npm test` runs the Vitest suite
+(`*.spec.ts`).
