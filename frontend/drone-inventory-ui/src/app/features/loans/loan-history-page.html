@@ -1,0 +1,46 @@
+<section class="page">
+  <header class="page-header">
+    <h2>Loan history</h2>
+    <p>Every loan, including the returned ones, with its accessories and dates.</p>
+  </header>
+
+  @if (errorMessage(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  <table class="card">
+    <caption class="visually-hidden">Loan history</caption>
+    <thead>
+      <tr>
+        <th scope="col">Drone</th>
+        <th scope="col">Student group</th>
+        <th scope="col">Batteries</th>
+        <th scope="col">Propellers</th>
+        <th scope="col">Loaned on</th>
+        <th scope="col">State</th>
+        <th scope="col">Returned on</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (loan of loans(); track loan.id) {
+        <tr>
+          <td>{{ loan.droneName }}</td>
+          <td>{{ loan.studentGroupName }}</td>
+          <td>{{ loan.batteryQuantity }}</td>
+          <td>{{ loan.propellerQuantity }}</td>
+          <td>{{ loan.loanedOn }}</td>
+          <td>
+            <span class="status" [class.status-loaned]="loan.state === 'Active'">
+              {{ loan.state }}
+            </span>
+          </td>
+          <td>{{ loan.returnedOn ?? 'not returned' }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="7" class="empty">No loans recorded yet.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>

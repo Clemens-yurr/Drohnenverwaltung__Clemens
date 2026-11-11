@@ -1,0 +1,74 @@
+<section class="page">
+  <header class="page-header">
+    <h2>New loan</h2>
+    <p>Loan one available drone to a student group and record the accessories it goes out with.</p>
+  </header>
+
+  <form class="card form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label for="loan-drone">Drone</label>
+    <select id="loan-drone" formControlName="droneId">
+      <option [ngValue]="null">Choose an available drone</option>
+      @for (drone of drones(); track drone.id) {
+        <option [ngValue]="drone.id">{{ drone.name }}</option>
+      }
+    </select>
+    @if (form.controls.droneId.touched && form.controls.droneId.hasError('required')) {
+      <p class="field-error" role="alert">Choose an available drone.</p>
+    }
+
+    <label for="loan-group">Student group</label>
+    <select id="loan-group" formControlName="studentGroupId">
+      <option [ngValue]="null">Choose a student group</option>
+      @for (group of groups(); track group.id) {
+        <option [ngValue]="group.id">{{ group.name }}</option>
+      }
+    </select>
+    @if (form.controls.studentGroupId.touched && form.controls.studentGroupId.hasError('required')) {
+      <p class="field-error" role="alert">Choose a student group.</p>
+    }
+
+    <div class="quantity-row">
+      <div>
+        <label for="loan-batteries">Batteries</label>
+        <input
+          id="loan-batteries"
+          type="number"
+          min="0"
+          step="1"
+          formControlName="batteryQuantity"
+        />
+        @if (form.controls.batteryQuantity.touched && form.controls.batteryQuantity.invalid) {
+          <p class="field-error" role="alert">Enter a whole number of 0 or more.</p>
+        }
+      </div>
+
+      <div>
+        <label for="loan-propellers">Propellers</label>
+        <input
+          id="loan-propellers"
+          type="number"
+          min="0"
+          step="1"
+          formControlName="propellerQuantity"
+        />
+        @if (form.controls.propellerQuantity.touched && form.controls.propellerQuantity.invalid) {
+          <p class="field-error" role="alert">Enter a whole number of 0 or more.</p>
+        }
+      </div>
+    </div>
+
+    @if (drones().length === 0) {
+      <p class="hint">No available drone right now. Return a loan or register a drone first.</p>
+    }
+
+    <button type="submit">Create loan</button>
+  </form>
+
+  @if (successMessage(); as message) {
+    <p class="notice" role="status">{{ message }}</p>
+  }
+
+  @if (errorMessage(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</section>
