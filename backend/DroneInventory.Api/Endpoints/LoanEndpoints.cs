@@ -1,6 +1,7 @@
 using DroneInventory.Api.Data;
 using DroneInventory.Api.Domain;
 using DroneInventory.Api.Dtos;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace DroneInventory.Api.Endpoints;
@@ -40,6 +41,16 @@ public static class LoanEndpoints
                     statusCode: StatusCodes.Status404NotFound);
             }
 
+            // A drone has at most one active loan. This readable check is backed up by the filtered
+            // unique index on Loans.DroneId, which also catches requests that race past it.
+            var droneIsLoaned = await dbContext.Loans
+                .AnyAsync(loan => loan.DroneId == drone.Id && loan.ReturnedOn == null);
+
+            if (droneIsLoaned)
+            {
+                return DroneNotAvailable(drone.Id);
+            }
+
             await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
             var loan = new Loan
@@ -54,9 +65,16 @@ public static class LoanEndpoints
                 loan.Items.Add(new LoanItem { Type = item.Type, Quantity = item.Quantity });
             }
 
-            dbContext.Loans.Add(loan);
-            await dbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            try
+            {
+                dbContext.Loans.Add(loan);
+                await dbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch (DbUpdateException exception) when (IsActiveLoanConflict(exception))
+            {
+                return DroneNotAvailable(drone.Id);
+            }
 
             var response = new LoanDto(
                 loan.Id,
@@ -73,6 +91,20 @@ public static class LoanEndpoints
 
         return endpoints;
     }
+
+    private static IResult DroneNotAvailable(int droneId) =>
+        Results.Problem(
+            title: "Drone not available",
+            detail: $"Drone {droneId} already has an active loan.",
+            statusCode: StatusCodes.Status409Conflict);
+
+    /// <summary>
+    /// SQLite reports a violation of the filtered unique index as a constraint error naming the
+    /// indexed column, which is how a second active loan from a concurrent request is recognized.
+    /// </summary>
+    private static bool IsActiveLoanConflict(DbUpdateException exception) =>
+        exception.InnerException is SqliteException { SqliteErrorCode: 19 } sqliteException
+        && sqliteException.Message.Contains("Loans.DroneId", StringComparison.Ordinal);
 
     /// <summary>
     /// Accessories are optional, but a quantity must be a nonnegative integer and each accessory
