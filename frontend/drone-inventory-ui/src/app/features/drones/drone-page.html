@@ -1,0 +1,60 @@
+<section class="page">
+  <header class="page-header">
+    <h2>Drones</h2>
+    <p>Register a drone and see whether it is available or currently loaned.</p>
+  </header>
+
+  <form class="card form" [formGroup]="form" (ngSubmit)="create()" novalidate>
+    <h3>Register a drone</h3>
+
+    <label for="drone-name">Name</label>
+    <input id="drone-name" type="text" formControlName="name" autocomplete="off" />
+    @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+      <p class="field-error" role="alert">A drone name is required.</p>
+    }
+
+    <label for="drone-description">Description</label>
+    <input id="drone-description" type="text" formControlName="description" autocomplete="off" />
+    @if (form.controls.description.touched && form.controls.description.hasError('required')) {
+      <p class="field-error" role="alert">A drone description is required.</p>
+    }
+
+    <button type="submit">Register drone</button>
+  </form>
+
+  @if (successMessage(); as message) {
+    <p class="notice" role="status">{{ message }}</p>
+  }
+
+  @if (errorMessage(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  <table class="card">
+    <caption class="visually-hidden">Registered drones</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Description</th>
+        <th scope="col">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (drone of drones(); track drone.id) {
+        <tr>
+          <td>{{ drone.name }}</td>
+          <td>{{ drone.description }}</td>
+          <td>
+            <span class="status" [class.status-loaned]="drone.status === 'Loaned'">
+              {{ drone.status }}
+            </span>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="3" class="empty">No drones registered yet.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>

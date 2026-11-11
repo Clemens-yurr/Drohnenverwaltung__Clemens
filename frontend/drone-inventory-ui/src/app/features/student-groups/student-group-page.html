@@ -1,0 +1,46 @@
+<section class="page">
+  <header class="page-header">
+    <h2>Student groups</h2>
+    <p>Create the groups that can borrow a drone.</p>
+  </header>
+
+  <form class="card form" [formGroup]="form" (ngSubmit)="create()" novalidate>
+    <h3>Create a student group</h3>
+
+    <label for="group-name">Name</label>
+    <input id="group-name" type="text" formControlName="name" autocomplete="off" />
+    @if (form.controls.name.touched && form.controls.name.hasError('required')) {
+      <p class="field-error" role="alert">A student group name is required.</p>
+    }
+
+    <button type="submit">Create student group</button>
+  </form>
+
+  @if (successMessage(); as message) {
+    <p class="notice" role="status">{{ message }}</p>
+  }
+
+  @if (errorMessage(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+
+  <table class="card">
+    <caption class="visually-hidden">Student groups</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (group of groups(); track group.id) {
+        <tr>
+          <td>{{ group.name }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td class="empty">No student groups yet.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</section>
