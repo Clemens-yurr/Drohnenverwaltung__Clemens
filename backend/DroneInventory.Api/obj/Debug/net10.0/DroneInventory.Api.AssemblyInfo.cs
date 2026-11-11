@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DroneInventory.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+807f0679cb652e44b2b7d64d2215c8506b9bb271")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7248e7d40f133149cb8edfb2c1d72ccf74f67df6")]
 [assembly: System.Reflection.AssemblyProductAttribute("DroneInventory.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DroneInventory.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
