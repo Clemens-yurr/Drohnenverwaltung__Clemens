@@ -12,6 +12,51 @@ public static class LoanEndpoints
     {
         var loans = endpoints.MapGroup("/api/loans");
 
+        loans.MapGet("", async (string? state, DroneInventoryDbContext dbContext) =>
+        {
+            var filter = state?.Trim().ToLowerInvariant();
+
+            if (filter is not null and not ("" or "active" or "returned"))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["state"] = ["The loan state must be 'active' or 'returned'."]
+                });
+            }
+
+            var query = dbContext.Loans.AsNoTracking();
+
+            query = filter switch
+            {
+                "active" => query.Where(loan => loan.ReturnedOn == null),
+                "returned" => query.Where(loan => loan.ReturnedOn != null),
+                _ => query
+            };
+
+            // Accessory quantities are read from the loan item rows; a missing type counts as zero.
+            var response = await query
+                .OrderBy(loan => loan.Id)
+                .Select(loan => new LoanListItemDto(
+                    loan.Id,
+                    loan.DroneId,
+                    loan.Drone.Name,
+                    loan.StudentGroupId,
+                    loan.StudentGroup.Name,
+                    loan.Items
+                        .Where(item => item.Type == LoanItemType.Battery)
+                        .Sum(item => (int?)item.Quantity) ?? 0,
+                    loan.Items
+                        .Where(item => item.Type == LoanItemType.Propeller)
+                        .Sum(item => (int?)item.Quantity) ?? 0,
+                    loan.LoanedOn,
+                    loan.ReturnedOn == null ? LoanState.Active : LoanState.Returned,
+                    loan.ReturnedOn))
+                .ToListAsync();
+
+            return Results.Ok(response);
+        })
+        .WithName("GetLoans");
+
         loans.MapPost("", async (CreateLoanRequest request, DroneInventoryDbContext dbContext) =>
         {
             var errors = Validate(request);
@@ -88,6 +133,46 @@ public static class LoanEndpoints
             return Results.Created($"/api/loans/{loan.Id}", response);
         })
         .WithName("CreateLoan");
+
+        loans.MapPost("/{id:int}/return", async (int id, DroneInventoryDbContext dbContext) =>
+        {
+            var loan = await dbContext.Loans
+                .Include(existing => existing.Drone)
+                .Include(existing => existing.StudentGroup)
+                .SingleOrDefaultAsync(existing => existing.Id == id);
+
+            if (loan is null)
+            {
+                return Results.Problem(
+                    title: "Loan not found",
+                    detail: $"No loan with id {id} exists.",
+                    statusCode: StatusCodes.Status404NotFound);
+            }
+
+            if (!loan.IsActive)
+            {
+                return Results.Problem(
+                    title: "Loan already returned",
+                    detail: $"Loan {loan.Id} was already returned on {loan.ReturnedOn:yyyy-MM-dd}.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
+            // The return date is set by the server; clients cannot backdate it.
+            loan.ReturnedOn = DateOnly.FromDateTime(DateTime.UtcNow);
+            await dbContext.SaveChangesAsync();
+
+            var response = new LoanDto(
+                loan.Id,
+                loan.DroneId,
+                loan.Drone.Name,
+                loan.StudentGroupId,
+                loan.StudentGroup.Name,
+                loan.LoanedOn,
+                loan.ReturnedOn);
+
+            return Results.Ok(response);
+        })
+        .WithName("ReturnLoan");
 
         return endpoints;
     }

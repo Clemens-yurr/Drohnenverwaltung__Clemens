@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "4x+lyrriVjA=",
+  "dgSpecHash": "eaLk2zLgAns=",
   "success": true,
-  "projectFilePath": "C:\\Users\\HP\\Desktop\\Drohnenverwaltung\\Drohnenverwaltung-issue13\\backend\\DroneInventory.Api.Tests\\DroneInventory.Api.Tests.csproj",
+  "projectFilePath": "C:\\Users\\HP\\Desktop\\Drohnenverwaltung\\Drohnenverwaltung-issue15\\backend\\DroneInventory.Api.Tests\\DroneInventory.Api.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\HP\\.nuget\\packages\\coverlet.collector\\6.0.4\\coverlet.collector.6.0.4.nupkg.sha512",
     "C:\\Users\\HP\\.nuget\\packages\\microsoft.aspnetcore.mvc.testing\\10.0.14\\microsoft.aspnetcore.mvc.testing.10.0.14.nupkg.sha512",
