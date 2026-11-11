@@ -11,9 +11,32 @@ public static class DroneEndpoints
     {
         var drones = endpoints.MapGroup("/api/drones");
 
-        drones.MapGet("", async (DroneInventoryDbContext dbContext) =>
+        drones.MapGet("", async (string? status, DroneInventoryDbContext dbContext) =>
         {
-            var drones = await dbContext.Drones
+            var filter = status?.Trim().ToLowerInvariant();
+
+            if (filter is not null and not ("" or "available" or "loaned"))
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["status"] = ["The drone status must be 'available' or 'loaned'."]
+                });
+            }
+
+            // Availability is derived from the loan rows, so the filter and the projection share the
+            // same definition of an active loan.
+            var droneQuery = dbContext.Drones.AsNoTracking();
+
+            droneQuery = filter switch
+            {
+                "available" => droneQuery.Where(drone =>
+                    !dbContext.Loans.Any(loan => loan.DroneId == drone.Id && loan.ReturnedOn == null)),
+                "loaned" => droneQuery.Where(drone =>
+                    dbContext.Loans.Any(loan => loan.DroneId == drone.Id && loan.ReturnedOn == null)),
+                _ => droneQuery
+            };
+
+            var drones = await droneQuery
                 .OrderBy(drone => drone.Id)
                 .Select(drone => new DroneDto(
                     drone.Id,

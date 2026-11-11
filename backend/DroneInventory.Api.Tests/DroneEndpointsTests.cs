@@ -111,6 +111,33 @@ public sealed class DroneEndpointsTests : IClassFixture<DroneInventoryApiFactory
         Assert.Equal("Available", afterReturn.GetProperty("status").GetString());
     }
 
+    [Fact]
+    public async Task GetDrones_WithStatusFilter_ReturnsOnlyMatchingDrones()
+    {
+        var loanedDroneId = await CreateDroneAsync("Filter Copter Loaned", "Out on loan");
+        var availableDroneId = await CreateDroneAsync("Filter Copter Free", "On the shelf");
+        SeedActiveLoan(loanedDroneId);
+
+        var available = await GetDronesAsync("?status=available");
+        var loaned = await GetDronesAsync("?status=loaned");
+
+        Assert.Contains(available, drone => drone.GetProperty("id").GetInt32() == availableDroneId);
+        Assert.DoesNotContain(available, drone => drone.GetProperty("id").GetInt32() == loanedDroneId);
+        Assert.All(available, drone => Assert.Equal("Available", drone.GetProperty("status").GetString()));
+
+        Assert.Contains(loaned, drone => drone.GetProperty("id").GetInt32() == loanedDroneId);
+        Assert.DoesNotContain(loaned, drone => drone.GetProperty("id").GetInt32() == availableDroneId);
+        Assert.All(loaned, drone => Assert.Equal("Loaned", drone.GetProperty("status").GetString()));
+    }
+
+    [Fact]
+    public async Task GetDrones_WithUnknownStatus_ReturnsValidationProblem()
+    {
+        var response = await _client.GetAsync("/api/drones?status=broken");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     private async Task<int> CreateDroneAsync(string name, string description)
     {
         var response = await _client.PostAsJsonAsync("/api/drones", new { name, description });
@@ -120,9 +147,9 @@ public sealed class DroneEndpointsTests : IClassFixture<DroneInventoryApiFactory
         return json.RootElement.GetProperty("id").GetInt32();
     }
 
-    private async Task<List<JsonElement>> GetDronesAsync()
+    private async Task<List<JsonElement>> GetDronesAsync(string query = "")
     {
-        var response = await _client.GetAsync("/api/drones");
+        var response = await _client.GetAsync($"/api/drones{query}");
         response.EnsureSuccessStatusCode();
 
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
