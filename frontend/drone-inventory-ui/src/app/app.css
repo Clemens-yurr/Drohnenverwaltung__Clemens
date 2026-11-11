@@ -1,0 +1,55 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  padding: 1.25rem clamp(1rem, 4vw, 3rem);
+  background: #12395f;
+  color: #f8fafc;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.brand p {
+  margin: 0.25rem 0 0;
+  color: #c8d8ea;
+  font-size: 0.9rem;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+nav a {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  color: #dbe8f5;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+nav a:hover {
+  background: rgb(255 255 255 / 12%);
+}
+
+nav a.active {
+  background: #f8fafc;
+  color: #12395f;
+}
+
+main {
+  padding: clamp(1rem, 3vw, 2.5rem) clamp(1rem, 4vw, 3rem) 3rem;
+}
