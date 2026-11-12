@@ -2,3 +2,8 @@
 **/obj/
 .env
 .tools/
+
+# Local SQLite databases and write-ahead logs
+**/*.db
+**/*.db-shm
+**/*.db-wal
